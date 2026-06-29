@@ -45,5 +45,5 @@ export async function seedDatabase() {
   }
 
   await db.profile.add({ id: "current", name: "María Elena Rojas", email: "maria.rojas@minedu.gob.pe", tags: ["Secundaria", "Matemáticas"] })
-  await db.preferences.add({ id: "current", notifications: true, highContrast: false, language: "Español (Perú)", offlineMode: false })
+  await db.preferences.add({ id: "current", notifications: true, highContrast: false, language: "Español (Perú)", offlineMode: false, activeSectionId: "4to-b-secundaria" })
 }

@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import { db } from "@/shared/db/database"
 
 export interface SectionInfo {
   id: string
@@ -26,7 +27,13 @@ interface SectionState {
 export const useSectionStore = create<SectionState>((set, get) => ({
   activeSectionId: "4to-b-secundaria",
   sections,
-  setActiveSection: (id) => set({ activeSectionId: id }),
+  setActiveSection: (id) => {
+    set({ activeSectionId: id })
+    // : ponytail — persist section preference
+    db.preferences.get("current").then((prefs) => {
+      db.preferences.put({ ...prefs!, id: "current", activeSectionId: id })
+    })
+  },
   getActiveSection: () => {
     const state = get()
     return state.sections.find((s) => s.id === state.activeSectionId) ?? state.sections[0]

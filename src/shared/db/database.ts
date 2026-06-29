@@ -20,7 +20,7 @@ export class AppDatabase extends Dexie {
 
   constructor() {
     super("AmautaDB")
-    this.version(2).stores({
+    this.version(3).stores({
       sessions: "id, userId",
       preferences: "id",
       profile: "id",

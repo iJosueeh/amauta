@@ -10,4 +10,5 @@ export interface SettingsPreferences {
   highContrast: boolean
   language: string
   offlineMode: boolean
+  activeSectionId: string
 }
