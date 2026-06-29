@@ -7,7 +7,7 @@ import type { Student as StudentRecord } from "@/features/students/types"
 import type { Section } from "@/features/sections/types"
 import type { Profile, SettingsPreferences } from "@/features/settings/types"
 
-// : ponytail — one DB class, flat tables, no abstractions
+// : ponytail — flat indexes, no compound index syntax to avoid IndexedDB keyPath errors
 export class AppDatabase extends Dexie {
   sessions!: Table<Session>
   preferences!: Table<{ id: string } & SettingsPreferences>
@@ -20,12 +20,12 @@ export class AppDatabase extends Dexie {
 
   constructor() {
     super("AmautaDB")
-    this.version(2).stores({
+    this.version(4).stores({
       sessions: "id, userId",
       preferences: "id",
       profile: "id",
-      attendance: "id, sectionId+date, sectionId",
-      grades: "id, sectionId+period, sectionId",
+      attendance: "id, sectionId, date",
+      grades: "id, sectionId, period",
       incidents: "id, sectionId",
       students: "id, section",
       sections: "id",

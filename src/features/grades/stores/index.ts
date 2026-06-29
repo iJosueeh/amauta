@@ -27,8 +27,9 @@ export const useGradesStore = create<GradesState>((set, get) => ({
     const sectionId = useSectionStore.getState().activeSectionId
     const period = get().selectedPeriod
     const records = await db.grades
-      .where("[sectionId+period]")
-      .equals([sectionId, period])
+      .where("sectionId")
+      .equals(sectionId)
+      .filter((r) => r.period === period)
       .toArray()
     const map: Record<string, Student["grades"]> = {}
     for (const r of records) map[r.studentId] = r.grades
