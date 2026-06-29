@@ -6,8 +6,10 @@ import { db } from "@/shared/db/database"
 
 interface AttendanceState {
   search: string
+  selectedDate: string
   statuses: Record<string, AttendanceStatus>
   setSearch: (search: string) => void
+  setDate: (date: string) => void
   setStatus: (studentId: string, status: AttendanceStatus) => void
   markAllPresent: () => void
   saveAttendance: () => Promise<void>
@@ -19,8 +21,10 @@ interface AttendanceState {
 
 export const useAttendanceStore = create<AttendanceState>((set, get) => ({
   search: "",
-  statuses: {},
+  selectedDate: new Date().toISOString().slice(0, 10),
   setSearch: (search) => set({ search }),
+  setDate: (selectedDate) => set({ selectedDate }),
+  statuses: {},
   setStatus: (studentId, status) =>
     set((s) => ({ statuses: { ...s.statuses, [studentId]: status } })),
   markAllPresent: () => {
@@ -31,14 +35,13 @@ export const useAttendanceStore = create<AttendanceState>((set, get) => ({
   },
   saveAttendance: async () => {
     const sectionId = useSectionStore.getState().activeSectionId
-    const date = new Date().toISOString().slice(0, 10)
-    const statuses = get().statuses
+    const { selectedDate, statuses } = get()
 
     for (const [studentId, status] of Object.entries(statuses)) {
       await db.attendance.put({
-        id: `${sectionId}-${date}-${studentId}`,
+        id: `${sectionId}-${selectedDate}-${studentId}`,
         sectionId,
-        date,
+        date: selectedDate,
         studentId,
         status,
       })
@@ -46,8 +49,8 @@ export const useAttendanceStore = create<AttendanceState>((set, get) => ({
   },
   loadAttendance: async () => {
     const sectionId = useSectionStore.getState().activeSectionId
-    const date = new Date().toISOString().slice(0, 10)
-    const records = await db.attendance.where("sectionId").equals(sectionId).filter((r) => r.date === date).toArray()
+    const { selectedDate } = get()
+    const records = await db.attendance.where("sectionId").equals(sectionId).filter((r) => r.date === selectedDate).toArray()
     const statuses: Record<string, AttendanceStatus> = {}
     for (const r of records) statuses[r.studentId] = r.status
     set({ statuses })

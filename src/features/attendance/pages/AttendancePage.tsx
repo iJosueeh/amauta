@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Search, CheckCheck, Save, ChevronLeft, ChevronRight } from "lucide-react"
+import { Search, CheckCheck, Save, ChevronLeft, ChevronRight, Calendar } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useAttendanceStore } from "@/features/attendance/stores"
@@ -9,12 +9,12 @@ import { useToast } from "@/shared/stores/toastStore"
 const PAGE_SIZE = 8
 
 export function AttendancePage() {
-  const { search, setSearch, setStatus, markAllPresent, saveAttendance, loadAttendance, getStudents, getSection, getSubject } = useAttendanceStore()
+  const { search, setSearch, setDate, selectedDate, setStatus, markAllPresent, saveAttendance, loadAttendance, getStudents, getSection, getSubject } = useAttendanceStore()
   const [page, setPage] = useState(1)
   const [saving, setSaving] = useState(false)
   const show = useToast((s) => s.show)
 
-  useEffect(() => { loadAttendance() }, [loadAttendance])
+  useEffect(() => { loadAttendance() }, [loadAttendance, selectedDate])
 
   const students = getStudents()
   const section = getSection()
@@ -35,14 +35,23 @@ export function AttendancePage() {
     <main className="flex h-full flex-col overflow-hidden px-4 pt-4 md:px-8">
       <div className="mx-auto flex h-full max-w-5xl flex-col">
         {/* Header */}
-        <div className="mb-4">
-          <h2 className="text-2xl font-bold tracking-tight text-foreground md:text-4xl">
-            {section}
-          </h2>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-            <span className="h-4 w-4" />
-            {subject}
-          </p>
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-foreground md:text-4xl">
+              {section}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">{subject}</p>
+          </div>
+          <div className="relative">
+            <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setDate(e.target.value)}
+              className="h-12 rounded-xl border-0 bg-muted/50 pl-10 pr-4 focus:bg-card focus:ring-2 focus:ring-primary"
+              aria-label="Fecha de asistencia"
+            />
+          </div>
         </div>
 
         {/* Search + Mass Action */}

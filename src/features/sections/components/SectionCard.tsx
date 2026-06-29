@@ -4,8 +4,6 @@ import {
   BookOpen,
   ArrowRight,
   Pencil,
-  Download,
-  MoreVertical,
 } from "lucide-react"
 import type { Section } from "@/features/sections/types"
 import { useSectionStore } from "@/shared/stores/sectionStore"
@@ -22,7 +20,12 @@ function getAverageBarColor(avg: number): string {
   return "bg-destructive"
 }
 
-export function SectionCard({ section }: { section: Section }) {
+interface SectionCardProps {
+  section: Section
+  onEdit?: () => void
+}
+
+export function SectionCard({ section, onEdit }: SectionCardProps) {
   const navigate = useNavigate()
   const setActiveSection = useSectionStore((s) => s.setActiveSection)
 
@@ -43,9 +46,15 @@ export function SectionCard({ section }: { section: Section }) {
               {section.name}
             </h3>
           </div>
-          <button className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-            <MoreVertical className="h-4 w-4" />
-          </button>
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label="Editar sección"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         <div className="mb-4 flex items-center gap-3 text-sm text-muted-foreground">
@@ -89,18 +98,14 @@ export function SectionCard({ section }: { section: Section }) {
           <ArrowRight className="h-4 w-4" />
         </button>
         <div className="flex gap-1">
-          <button
-            className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
-            title="Editar"
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
-          <button
-            className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
-            title="Exportar"
-          >
-            <Download className="h-4 w-4" />
-          </button>
+          {onEdit && (
+            <button
+              className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+              title="Editar"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>
