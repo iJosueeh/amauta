@@ -1,10 +1,12 @@
 import type { IncidentsData } from "@/features/incidents/types"
 
+// Canonical IDs derived from studentRoster initials + section matching
 export const incidentsBySection: Record<string, IncidentsData> = {
   "4to-b-secundaria": {
     incidents: [
       {
         id: "1",
+        studentId: "4to-b-secundaria-3",
         studentName: "Campos Silva, Jorge",
         studentInitials: "CJ",
         section: "4to B - Secundaria",
@@ -16,13 +18,12 @@ export const incidentsBySection: Record<string, IncidentsData> = {
       },
     ],
   },
-  "3to-a-secundaria": {
-    incidents: [],
-  },
+  "3to-a-secundaria": { incidents: [] },
   "5to-b-secundaria": {
     incidents: [
       {
         id: "1",
+        studentId: "5to-b-secundaria-5",
         studentName: "Lopez Medina, Jose",
         studentInitials: "LM",
         section: "5to B - Secundaria",
@@ -34,6 +35,7 @@ export const incidentsBySection: Record<string, IncidentsData> = {
       },
       {
         id: "2",
+        studentId: "5to-b-secundaria-7",
         studentName: "Nunez Paredes, Luis",
         studentInitials: "NP",
         section: "5to B - Secundaria",
@@ -49,6 +51,7 @@ export const incidentsBySection: Record<string, IncidentsData> = {
     incidents: [
       {
         id: "1",
+        studentId: "1ro-a-secundaria-2",
         studentName: "Quispe Mamani, Claudia",
         studentInitials: "QM",
         section: "1ro A - Secundaria",
@@ -60,13 +63,12 @@ export const incidentsBySection: Record<string, IncidentsData> = {
       },
     ],
   },
-  "5to-c-primaria": {
-    incidents: [],
-  },
+  "5to-c-primaria": { incidents: [] },
   "3ro-a-primaria": {
     incidents: [
       {
         id: "1",
+        studentId: "3ro-a-primaria-4",
         studentName: "Chambilla Pinto, Luis",
         studentInitials: "CP",
         section: "3ro A - Primaria",

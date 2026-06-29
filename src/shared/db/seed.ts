@@ -2,8 +2,8 @@ import { db } from "./database"
 import { attendanceBySection } from "@/features/attendance/seeds"
 import { gradesBySection } from "@/features/grades/seeds"
 import { incidentsBySection } from "@/features/incidents/seeds"
-import { studentsData } from "@/features/students/seeds"
 import { sectionsData } from "@/features/sections/seeds"
+import { studentRoster } from "@/shared/seeds/studentRoster"
 
 // : ponytail — runs once, no-op if data exists
 export async function seedDatabase() {
@@ -11,33 +11,42 @@ export async function seedDatabase() {
   if (count > 0) return
 
   await db.sections.bulkAdd(sectionsData)
-  await db.students.bulkAdd(studentsData)
 
+  // Seed canonical student roster (single source of truth)
+  await db.students.bulkAdd(studentRoster)
+
+  // Seed attendance — iterate over canonical roster filtered by section
   for (const [sectionId, data] of Object.entries(attendanceBySection)) {
     const date = new Date().toISOString().slice(0, 10)
-    for (const s of data.students) {
+    const sectionLabel = data.section
+    const sectionRoster = studentRoster.filter((r) => r.section === sectionLabel)
+    for (const s of sectionRoster) {
       await db.attendance.add({
         id: `${sectionId}-${date}-${s.id}`,
         sectionId,
         date,
         studentId: s.id,
-        status: s.status,
+        status: "present", // default status
       })
     }
   }
 
+  // Seed grades — iterate over canonical roster filtered by section
   for (const [sectionId, data] of Object.entries(gradesBySection)) {
-    for (const s of data.students) {
+    const sectionLabel = data.section
+    const sectionRoster = studentRoster.filter((r) => r.section === sectionLabel)
+    for (const s of sectionRoster) {
       await db.grades.add({
         id: `${sectionId}-1-${s.id}`,
         sectionId,
         period: "1",
         studentId: s.id,
-        grades: s.grades,
+        grades: { ev1: null, ev2: null, ev3: null, exam: null }, // blank slate
       })
     }
   }
 
+  // Seed incidents — studentId already embedded in seed data
   for (const [sectionId, data] of Object.entries(incidentsBySection)) {
     for (const inc of data.incidents) {
       await db.incidents.add({ ...inc, sectionId })

@@ -5,16 +5,19 @@ import { Button } from "@/components/ui/button"
 import { useAttendanceStore } from "@/features/attendance/stores"
 import { StudentAttendanceCard } from "@/features/attendance/components/StudentAttendanceCard"
 import { useToast } from "@/shared/stores/toastStore"
+import { useSectionStore } from "@/shared/stores/sectionStore"
 
 const PAGE_SIZE = 8
 
 export function AttendancePage() {
-  const { search, setSearch, setDate, selectedDate, setStatus, markAllPresent, saveAttendance, loadAttendance, getStudents, getSection, getSubject } = useAttendanceStore()
+  const { search, setSearch, setDate, selectedDate, setStatus, markAllPresent, saveAttendance, loadAttendance, loadStudents, getStudents, getSection, getSubject } = useAttendanceStore()
   const [page, setPage] = useState(1)
   const [saving, setSaving] = useState(false)
   const show = useToast((s) => s.show)
+  const activeSectionId = useSectionStore((s) => s.activeSectionId)
 
-  useEffect(() => { loadAttendance() }, [loadAttendance, selectedDate])
+  useEffect(() => { loadStudents() }, [activeSectionId, loadStudents])
+  useEffect(() => { loadAttendance() }, [loadAttendance, selectedDate, activeSectionId])
 
   const students = getStudents()
   const section = getSection()

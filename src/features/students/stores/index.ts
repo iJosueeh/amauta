@@ -51,11 +51,11 @@ export const useStudentsStore = create<StudentsState>((set, get) => ({
   getStudents: () => {
     const sectionId = useSectionStore.getState().activeSectionId
     const section = useSectionStore.getState().sections.find((s) => s.id === sectionId)
-    const sectionName = section?.name ?? ""
+    const sectionLabel = section ? `${section.name} - ${section.level === "secundaria" ? "Secundaria" : "Primaria"}` : ""
     const { students, search, filters } = get()
     const { performance } = filters
     return students.filter((s) => {
-      if (sectionName && !s.section.includes(sectionName.split(" - ")[0])) return false
+      if (sectionLabel && s.section !== sectionLabel) return false
       if (search && !s.name.toLowerCase().includes(search.toLowerCase())) return false
       if (performance && s.performance !== performance) return false
       return true

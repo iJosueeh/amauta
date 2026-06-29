@@ -15,16 +15,21 @@ const evaluations = [
 ]
 
 export function GradesTable() {
-  const { getStudents, updateGrades, loadGrades } = useGradesStore()
+  const { updateGrades, loadGrades, getStudentsFromRoster } = useGradesStore()
   const activeSectionId = useSectionStore((s) => s.activeSectionId)
+  const selectedPeriod = useGradesStore((s) => s.selectedPeriod)
   const [students, setStudents] = useState<Student[]>([])
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
 
-  useEffect(() => { loadGrades() }, [activeSectionId, loadGrades])
-  useEffect(() => { setStudents(getStudents()) }, [activeSectionId, getStudents])
-  const selectedPeriod = useGradesStore((s) => s.selectedPeriod)
-  useEffect(() => { setStudents(getStudents()) }, [selectedPeriod, getStudents])
+  useEffect(() => {
+    loadGrades()
+    getStudentsFromRoster().then(setStudents)
+  }, [activeSectionId, loadGrades, getStudentsFromRoster])
+
+  useEffect(() => {
+    getStudentsFromRoster().then(setStudents)
+  }, [selectedPeriod, getStudentsFromRoster])
 
   const updateGrade = useCallback(
     (studentId: string, field: keyof Student["grades"], value: number | null) => {

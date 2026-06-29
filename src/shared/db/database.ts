@@ -20,13 +20,13 @@ export class AppDatabase extends Dexie {
 
   constructor() {
     super("AmautaDB")
-    this.version(4).stores({
+    this.version(5).stores({
       sessions: "id, userId",
       preferences: "id",
       profile: "id",
       attendance: "id, sectionId, date",
       grades: "id, sectionId, period",
-      incidents: "id, sectionId",
+      incidents: "id, sectionId, studentId",
       students: "id, section",
       sections: "id",
     })

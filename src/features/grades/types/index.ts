@@ -10,11 +10,11 @@ export interface Student {
   }
 }
 
+// : ponytail — seed metadata only; student roster lives in Dexie via canonical studentRoster
 export interface GradesData {
   subject: string
   section: string
   period: string
-  students: Student[]
 }
 
 export type Period = "1" | "2" | "3"

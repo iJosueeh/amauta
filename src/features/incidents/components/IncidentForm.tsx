@@ -7,7 +7,16 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import type { Incident, IncidentCategory } from "@/features/incidents/types"
+import type { Student as RosterStudent } from "@/features/students/types"
+import { db } from "@/shared/db/database"
 
 interface IncidentFormProps {
   open: boolean
@@ -24,20 +33,29 @@ const categories: { value: IncidentCategory; label: string }[] = [
 ]
 
 export function IncidentForm({ open, onOpenChange, onSave, initial, sectionName }: IncidentFormProps) {
-  const [studentName, setStudentName] = useState("")
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>("")
+  const [students, setStudents] = useState<RosterStudent[]>([])
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [category, setCategory] = useState<IncidentCategory>("observation")
 
   useEffect(() => {
+    if (!open) return
+    // Query by sectionId suffix by filtering all and matching the section label
+    db.students.toArray().then((all) =>
+      setStudents(all.filter((s) => s.section === sectionName))
+    )
+  }, [open, sectionName])
+
+  useEffect(() => {
     if (open) {
       if (initial) {
-        setStudentName(initial.studentName)
+        setSelectedStudentId(initial.studentId)
         setTitle(initial.title)
         setDescription(initial.description)
         setCategory(initial.category)
       } else {
-        setStudentName("")
+        setSelectedStudentId("")
         setTitle("")
         setDescription("")
         setCategory("observation")
@@ -45,15 +63,17 @@ export function IncidentForm({ open, onOpenChange, onSave, initial, sectionName 
     }
   }, [open, initial])
 
+  const selectedStudent = students.find((s) => s.id === selectedStudentId)
+
   const handleSave = () => {
-    if (!studentName.trim() || !title.trim()) return
+    if (!selectedStudentId || !title.trim()) return
     const now = new Date()
     const date = now.toLocaleDateString("es-PE", { day: "2-digit", month: "long", year: "numeric" })
     const time = now.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })
-    const initials = studentName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase()
     onSave({
-      studentName,
-      studentInitials: initials,
+      studentId: selectedStudentId,
+      studentName: selectedStudent?.name ?? "",
+      studentInitials: selectedStudent?.initials ?? "",
       section: sectionName,
       category,
       title,
@@ -73,11 +93,18 @@ export function IncidentForm({ open, onOpenChange, onSave, initial, sectionName 
         <div className="space-y-3 p-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-foreground">Alumno</label>
-            <Input
-              value={studentName}
-              onChange={(e) => setStudentName(e.target.value)}
-              placeholder="Nombre del alumno"
-            />
+            <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar alumno..." />
+              </SelectTrigger>
+              <SelectContent>
+                {students.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name} ({s.initials})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-foreground">Título</label>
@@ -114,7 +141,7 @@ export function IncidentForm({ open, onOpenChange, onSave, initial, sectionName 
         </div>
         <div className="flex justify-end gap-2 border-t border-border/30 px-4 py-3">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={!studentName.trim() || !title.trim()}>
+          <Button onClick={handleSave} disabled={!selectedStudentId || !title.trim()}>
             {initial ? "Guardar" : "Crear"}
           </Button>
         </div>

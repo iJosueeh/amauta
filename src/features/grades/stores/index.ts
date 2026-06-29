@@ -11,7 +11,7 @@ interface GradesState {
   setSelectedPeriod: (p: Period) => void
   loadGrades: () => Promise<void>
   updateGrades: (studentId: string, grades: Student["grades"]) => Promise<void>
-  getStudents: () => Student[]
+  getStudentsFromRoster: () => Promise<Student[]>
   getSubject: () => string
   getSection: () => string
 }
@@ -42,21 +42,25 @@ export const useGradesStore = create<GradesState>((set, get) => ({
     set((s) => ({ gradesMap: { ...s.gradesMap, [studentId]: grades } }))
     useSyncStore.getState().markDirty()
   },
-  getStudents: () => {
+  getStudentsFromRoster: async () => {
     const sectionId = useSectionStore.getState().activeSectionId
-    const seed = gradesBySection[sectionId] ?? gradesBySection["4to-b-secundaria"]
+    const section = gradesBySection[sectionId]?.section ?? ""
+    await get().loadGrades()
     const { gradesMap } = get()
-    return seed.students.map((s) => ({
-      ...s,
-      grades: gradesMap[s.id] ?? s.grades,
+    const roster = await db.students.where("section").equals(section).toArray()
+    return roster.map((s) => ({
+      id: s.id,
+      name: s.name,
+      initials: s.initials,
+      grades: gradesMap[s.id] ?? { ev1: null, ev2: null, ev3: null, exam: null },
     }))
   },
   getSubject: () => {
     const sectionId = useSectionStore.getState().activeSectionId
-    return (gradesBySection[sectionId] ?? gradesBySection["4to-b-secundaria"]).subject
+    return gradesBySection[sectionId]?.subject ?? "—"
   },
   getSection: () => {
     const sectionId = useSectionStore.getState().activeSectionId
-    return (gradesBySection[sectionId] ?? gradesBySection["4to-b-secundaria"]).section
+    return gradesBySection[sectionId]?.section ?? "—"
   },
 }))

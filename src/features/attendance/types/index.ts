@@ -8,8 +8,8 @@ export interface StudentAttendance {
   status: AttendanceStatus
 }
 
+// : ponytail — seed metadata only; student roster lives in Dexie via canonical studentRoster
 export interface AttendanceData {
   section: string
   subject: string
-  students: StudentAttendance[]
 }

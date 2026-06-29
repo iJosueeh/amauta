@@ -25,18 +25,19 @@ export const useSectionsStore = create<SectionsState>((set, get) => ({
     // : ponytail — compute metrics from Dexie at load time
     const enriched = await Promise.all(
       records.map(async (s) => {
+        const sectionLabel = `${s.name} - ${s.level === "secundaria" ? "Secundaria" : "Primaria"}`
         const [students, gradesRows, incidents] = await Promise.all([
-          db.students.filter((st) => st.section.includes(s.name.split(" - ")[0])).toArray(),
+          db.students.where("section").equals(sectionLabel).toArray(),
           db.grades.filter((g) => g.sectionId === s.id).toArray(),
           db.incidents.filter((i) => i.sectionId === s.id).toArray(),
         ])
 
         const allGrades = gradesRows.flatMap((g) => [g.grades.ev1, g.grades.ev2, g.grades.ev3, g.grades.exam].filter((v): v is number => v !== null))
-        const avg = allGrades.length > 0 ? parseFloat((allGrades.reduce((a, b) => a + b, 0) / allGrades.length).toFixed(1)) : s.average
+        const avg = allGrades.length > 0 ? parseFloat((allGrades.reduce((a, b) => a + b, 0) / allGrades.length).toFixed(1)) : 0
 
         return {
           ...s,
-          studentCount: students.length || s.studentCount,
+          studentCount: students.length,
           average: avg,
           incidentsCount: incidents.length,
         }
