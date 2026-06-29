@@ -12,6 +12,9 @@ interface StudentsState {
   setSearch: (search: string) => void
   setPerformanceFilter: (performance: PerformanceLevel | null) => void
   clearFilters: () => void
+  addStudent: (data: Omit<Student, "id">) => Promise<void>
+  updateStudent: (id: string, data: Partial<Student>) => Promise<void>
+  deleteStudent: (id: string) => Promise<void>
   getStudents: () => Student[]
 }
 
@@ -28,6 +31,19 @@ export const useStudentsStore = create<StudentsState>((set, get) => ({
   setPerformanceFilter: (performance) =>
     set((s) => ({ filters: { ...s.filters, performance } })),
   clearFilters: () => set({ filters: { performance: null } }),
+  addStudent: async (data) => {
+    const id = `${Date.now()}`
+    await db.students.add({ ...data, id })
+    await get().loadStudents()
+  },
+  updateStudent: async (id, data) => {
+    await db.students.update(id, data)
+    await get().loadStudents()
+  },
+  deleteStudent: async (id) => {
+    await db.students.delete(id)
+    await get().loadStudents()
+  },
   getStudents: () => {
     const sectionId = useSectionStore.getState().activeSectionId
     const section = useSectionStore.getState().sections.find((s) => s.id === sectionId)
