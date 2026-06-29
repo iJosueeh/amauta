@@ -34,7 +34,7 @@ export function LoginForm() {
     if (user && password.length > 0) {
       setIsLoading(true)
       await new Promise((r) => setTimeout(r, 600))
-      login(user.id)
+      await login(user.id) // await the Dexie write + state update before navigating
       navigate("/dashboard")
     } else {
       setError("Credenciales inválidas")
