@@ -1,6 +1,7 @@
+import { useEffect } from "react"
 import { Users, UserCheck, AlertTriangle, Star } from "lucide-react"
 import { useSectionStore } from "@/shared/stores/sectionStore"
-import { dashboardBySection } from "@/features/dashboard/seeds"
+import { useDashboardStore } from "@/features/dashboard/stores"
 
 const iconMap = { Users, UserCheck, AlertTriangle, Star } as const
 
@@ -13,12 +14,14 @@ const colorMap = {
 
 export function DashboardKpis() {
   const activeSectionId = useSectionStore((s) => s.activeSectionId)
-  const data = dashboardBySection[activeSectionId] ?? dashboardBySection["4to-b-secundaria"]
+  const { kpis, loadKpis } = useDashboardStore()
+
+  useEffect(() => { loadKpis() }, [activeSectionId, loadKpis])
 
   return (
     <section className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-      {data.kpis.map((kpi) => {
-        const Icon = iconMap[kpi.icon as keyof typeof iconMap]
+      {kpis.map((kpi) => {
+        const Icon = iconMap[kpi.icon]
         return (
           <div
             key={kpi.id}
