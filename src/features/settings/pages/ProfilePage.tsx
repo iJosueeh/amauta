@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import { useNavigate } from "react-router"
 import {
   ArrowLeft,
@@ -29,7 +30,9 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
 export function ProfilePage() {
   const navigate = useNavigate()
   const logout = useAuthStore((s) => s.logout)
-  const { profile, preferences, toggleNotifications, toggleHighContrast, toggleOfflineMode, setLanguage } = useSettingsStore()
+  const { profile, preferences, toggleNotifications, toggleHighContrast, toggleOfflineMode, setLanguage, loadSettings } = useSettingsStore()
+
+  useEffect(() => { loadSettings() }, [loadSettings])
 
   const handleLogout = () => {
     logout()

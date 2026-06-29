@@ -1,15 +1,20 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search, CheckCheck, Save, ChevronLeft, ChevronRight } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useAttendanceStore } from "@/features/attendance/stores"
 import { StudentAttendanceCard } from "@/features/attendance/components/StudentAttendanceCard"
+import { useToast } from "@/shared/stores/toastStore"
 
 const PAGE_SIZE = 8
 
 export function AttendancePage() {
-  const { search, setSearch, setStatus, markAllPresent, getStudents, getSection, getSubject } = useAttendanceStore()
+  const { search, setSearch, setStatus, markAllPresent, saveAttendance, loadAttendance, getStudents, getSection, getSubject } = useAttendanceStore()
   const [page, setPage] = useState(1)
+  const [saving, setSaving] = useState(false)
+  const show = useToast((s) => s.show)
+
+  useEffect(() => { loadAttendance() }, [loadAttendance])
 
   const students = getStudents()
   const section = getSection()
@@ -135,9 +140,19 @@ export function AttendancePage() {
 
       {/* FAB Guardar */}
       <div className="fixed bottom-24 right-4 z-40 md:bottom-8 md:right-8">
-        <button className="flex h-14 items-center gap-2 rounded-2xl bg-secondary px-6 text-secondary-foreground shadow-[0_12px_32px_rgba(15,23,42,0.1)] transition-all hover:scale-105 hover:shadow-[0_16px_40px_rgba(15,23,42,0.15)]">
+        <button
+          onClick={async () => {
+            setSaving(true)
+            await saveAttendance()
+            setSaving(false)
+            show("Asistencia guardada")
+          }}
+          disabled={saving}
+          className="flex h-14 items-center gap-2 rounded-2xl bg-secondary px-6 text-secondary-foreground shadow-[0_12px_32px_rgba(15,23,42,0.1)] transition-all hover:scale-105 hover:shadow-[0_16px_40px_rgba(15,23,42,0.15)] disabled:opacity-50"
+          aria-label="Guardar asistencia"
+        >
           <Save className="h-5 w-5" />
-          <span className="text-sm font-bold">Guardar Asistencia</span>
+          <span className="text-sm font-bold">{saving ? "Guardando..." : "Guardar Asistencia"}</span>
         </button>
       </div>
     </main>

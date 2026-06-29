@@ -154,6 +154,12 @@ input::-webkit-textfield-decoration-button {
     display: none !important;
 }
 
+/* : ponytail — minimal a11y focus styles */
+:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .animate-blob-bounce,
     .animate-blob-bounce-delayed,

@@ -15,7 +15,7 @@ const evaluations = [
 ]
 
 export function GradesTable() {
-  const { getStudents } = useGradesStore()
+  const { getStudents, updateGrades } = useGradesStore()
   const activeSectionId = useSectionStore((s) => s.activeSectionId)
   const [students, setStudents] = useState<Student[]>(getStudents())
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
@@ -45,8 +45,9 @@ export function GradesTable() {
           s.id === studentId ? { ...s, grades } : s
         )
       )
+      updateGrades(studentId, grades)
     },
-    []
+    [updateGrades]
   )
 
   const openDialog = useCallback((student: Student) => {

@@ -25,7 +25,7 @@ const menuSections = [
   {
     title: "General",
     items: [
-      { id: "settings", label: "Configuración", description: "Preferencias de la app", icon: Settings, href: "/dashboard/more/settings" },
+      { id: "settings", label: "Configuración", description: "Preferencias de la app", icon: Settings, href: "/dashboard/more/profile" },
       { id: "reports", label: "Reportes", description: "Estadísticas y reportes", icon: FileBarChart, href: "/dashboard/more/reports" },
     ],
   },

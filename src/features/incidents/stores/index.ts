@@ -19,10 +19,11 @@ export const useIncidentsStore = create<IncidentsState>((set, get) => ({
   getIncidents: () => {
     const sectionId = useSectionStore.getState().activeSectionId
     const data = incidentsBySection[sectionId] ?? incidentsBySection["4to-b-secundaria"]
-    const { search, category } = get().filters
+    const { search, category, date } = get().filters
     return data.incidents.filter((inc) => {
       if (search && !inc.studentName.toLowerCase().includes(search.toLowerCase())) return false
       if (category !== "all" && inc.category !== category) return false
+      if (date && !inc.date.includes(date)) return false
       return true
     })
   },

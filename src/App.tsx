@@ -2,13 +2,16 @@ import { useEffect, useState } from "react"
 import { RouterProvider } from "react-router"
 import { router } from "@/app/routes/router"
 import { seedDatabase } from "@/shared/db/seed"
+import { useAuthStore } from "@/features/auth/stores/authStore"
+import { ToastContainer } from "@/shared/components/Toast"
 
 export default function App() {
   const [dbReady, setDbReady] = useState(false)
+  const restore = useAuthStore((s) => s.restore)
 
   useEffect(() => {
-    seedDatabase().then(() => setDbReady(true))
-  }, [])
+    seedDatabase().then(() => restore()).then(() => setDbReady(true))
+  }, [restore])
 
   if (!dbReady) {
     return (
@@ -18,5 +21,10 @@ export default function App() {
     )
   }
 
-  return <RouterProvider router={router} />
+  return (
+    <>
+      <RouterProvider router={router} />
+      <ToastContainer />
+    </>
+  )
 }

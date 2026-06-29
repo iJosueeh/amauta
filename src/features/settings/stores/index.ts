@@ -1,42 +1,46 @@
 import { create } from "zustand"
 import type { Profile, SettingsPreferences } from "@/features/settings/types"
+import { db } from "@/shared/db/database"
 
 interface SettingsState {
   profile: Profile
   preferences: SettingsPreferences
-  toggleNotifications: () => void
-  toggleHighContrast: () => void
-  toggleOfflineMode: () => void
-  setLanguage: (lang: string) => void
+  loaded: boolean
+  loadSettings: () => Promise<void>
+  toggleNotifications: () => Promise<void>
+  toggleHighContrast: () => Promise<void>
+  toggleOfflineMode: () => Promise<void>
+  setLanguage: (lang: string) => Promise<void>
 }
 
-export const useSettingsStore = create<SettingsState>((set) => ({
-  profile: {
-    name: "María Elena Rojas",
-    email: "maria.rojas@minedu.gob.pe",
-    avatarUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuCqllBRVGkAhlXSU5TXu_BXJPxJem1HoGo1vtjYaGI0jTqCnkifpdilZDkZb_nms5t84GYlLCw9I06QrskG8DXDdikLd6Ph0VoLiIvX8J-G9LmsPVgtSAub5V0A6fc5tRYVNI8puskg8tiurWYLNX9kI5TqJVGyKSSacTT9-MSzpxCnvoreIKUTE1RowQt-zfX-kbvJXie7Yf7VXNJ-s9AuNs7GqHFLBzq4w-22EvhB3PX9_ot4EtZxdB6bHAKe2G4oPJ3UME2fwQ",
-    tags: ["Secundaria", "Matemáticas"],
+export const useSettingsStore = create<SettingsState>((set, get) => ({
+  profile: { name: "", email: "", tags: [] },
+  preferences: { notifications: true, highContrast: false, language: "Español (Perú)", offlineMode: false },
+  loaded: false,
+  loadSettings: async () => {
+    const profile = await db.profile.get("current")
+    const prefs = await db.preferences.get("current")
+    if (profile) set({ profile: { name: profile.name, email: profile.email, avatarUrl: profile.avatarUrl, tags: profile.tags } })
+    if (prefs) set({ preferences: { notifications: prefs.notifications, highContrast: prefs.highContrast, language: prefs.language, offlineMode: prefs.offlineMode } })
+    set({ loaded: true })
   },
-  preferences: {
-    notifications: true,
-    highContrast: false,
-    language: "Español (Perú)",
-    offlineMode: false,
+  toggleNotifications: async () => {
+    const next = !get().preferences.notifications
+    set((s) => ({ preferences: { ...s.preferences, notifications: next } }))
+    await db.preferences.put({ id: "current", ...get().preferences, notifications: next })
   },
-  toggleNotifications: () =>
-    set((s) => ({
-      preferences: { ...s.preferences, notifications: !s.preferences.notifications },
-    })),
-  toggleHighContrast: () =>
-    set((s) => ({
-      preferences: { ...s.preferences, highContrast: !s.preferences.highContrast },
-    })),
-  toggleOfflineMode: () =>
-    set((s) => ({
-      preferences: { ...s.preferences, offlineMode: !s.preferences.offlineMode },
-    })),
-  setLanguage: (language) =>
-    set((s) => ({
-      preferences: { ...s.preferences, language },
-    })),
+  toggleHighContrast: async () => {
+    const next = !get().preferences.highContrast
+    set((s) => ({ preferences: { ...s.preferences, highContrast: next } }))
+    await db.preferences.put({ id: "current", ...get().preferences, highContrast: next })
+  },
+  toggleOfflineMode: async () => {
+    const next = !get().preferences.offlineMode
+    set((s) => ({ preferences: { ...s.preferences, offlineMode: next } }))
+    await db.preferences.put({ id: "current", ...get().preferences, offlineMode: next })
+  },
+  setLanguage: async (language) => {
+    set((s) => ({ preferences: { ...s.preferences, language } }))
+    await db.preferences.put({ id: "current", ...get().preferences, language })
+  },
 }))
