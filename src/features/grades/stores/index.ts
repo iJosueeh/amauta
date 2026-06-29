@@ -3,6 +3,7 @@ import type { Period, Student } from "@/features/grades/types"
 import { gradesBySection } from "@/features/grades/seeds"
 import { useSectionStore } from "@/shared/stores/sectionStore"
 import { db } from "@/shared/db/database"
+import { useSyncStore } from "@/shared/stores/syncStore"
 
 interface GradesState {
   gradesMap: Record<string, Student["grades"]>
@@ -38,6 +39,7 @@ export const useGradesStore = create<GradesState>((set, get) => ({
     const period = get().selectedPeriod
     await db.grades.put({ id: `${sectionId}-${period}-${studentId}`, sectionId, period, studentId, grades })
     set((s) => ({ gradesMap: { ...s.gradesMap, [studentId]: grades } }))
+    useSyncStore.getState().markDirty()
   },
   getStudents: () => {
     const sectionId = useSectionStore.getState().activeSectionId

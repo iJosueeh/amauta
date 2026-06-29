@@ -1,11 +1,28 @@
+import { useEffect } from "react"
 import { Link, useLocation } from "react-router"
-import { Cloud } from "lucide-react"
+import { RefreshCw, WifiOff } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
 import { mainNavItems, isNavActive } from "@/shared/config/nav"
+import { useSyncStore } from "@/shared/stores/syncStore"
 
 export function DashboardTopBar() {
   const location = useLocation()
+  const { hasPendingChanges, isSyncing, isOnline, lastSyncedAt, sync, setOnline } = useSyncStore()
+
+  useEffect(() => {
+    const handleOnline = () => setOnline(true)
+    const handleOffline = () => setOnline(false)
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+    }
+  }, [setOnline])
+
+  const dotColor = !isOnline ? "bg-red-500" : hasPendingChanges ? "bg-amber-500" : "bg-green-500"
+  const label = !isOnline ? "Sin conexión" : hasPendingChanges ? "Cambios pendientes" : "Sincronizado"
+  const Icon = !isOnline ? WifiOff : RefreshCw
 
   return (
     <header className="sticky top-0 z-40 flex w-full items-center justify-between bg-background px-4 py-2 md:px-8">
@@ -27,9 +44,7 @@ export function DashboardTopBar() {
               key={item.url}
               to={item.url}
               className={`flex flex-col items-center gap-0.5 rounded-lg px-4 py-2 transition-colors ${
-                isActive
-                  ? "bg-muted font-bold text-primary"
-                  : "text-muted-foreground hover:bg-muted"
+                isActive ? "bg-muted font-bold text-primary" : "text-muted-foreground hover:bg-muted"
               }`}
             >
               <item.icon className="h-5 w-5" />
@@ -39,14 +54,17 @@ export function DashboardTopBar() {
         })}
       </nav>
 
-      <Button
-        variant="ghost"
-        size="icon"
-        className="text-primary hover:bg-muted"
-        aria-label="Estado de sincronización"
+      <button
+        onClick={sync}
+        disabled={isSyncing || !isOnline}
+        className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-all hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+        aria-label={label}
+        title={lastSyncedAt ? `Última sync: ${new Date(lastSyncedAt).toLocaleTimeString()}` : ""}
       >
-        <Cloud className="h-5 w-5" />
-      </Button>
+        <span className={`h-2 w-2 rounded-full ${dotColor} ${isSyncing ? "animate-ping" : ""}`} />
+        <Icon className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+        <span className="hidden sm:inline">{label}</span>
+      </button>
     </header>
   )
 }

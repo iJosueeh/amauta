@@ -1,6 +1,7 @@
 import { create } from "zustand"
 import type { Section } from "@/features/sections/types"
 import { db } from "@/shared/db/database"
+import { useSyncStore } from "@/shared/stores/syncStore"
 
 interface SectionsState {
   sections: Section[]
@@ -27,14 +28,17 @@ export const useSectionsStore = create<SectionsState>((set, get) => ({
     const id = data.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
     await db.sections.add({ ...data, id, incidentsCount: 0 })
     await get().loadSections()
+    useSyncStore.getState().markDirty()
   },
   updateSection: async (id, data) => {
     await db.sections.update(id, data)
     await get().loadSections()
+    useSyncStore.getState().markDirty()
   },
   deleteSection: async (id) => {
     await db.sections.delete(id)
     await get().loadSections()
+    useSyncStore.getState().markDirty()
   },
   getSections: () => {
     const { sections, search } = get()

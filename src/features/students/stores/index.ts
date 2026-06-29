@@ -2,6 +2,7 @@ import { create } from "zustand"
 import type { Student, PerformanceLevel } from "@/features/students/types"
 import { useSectionStore } from "@/shared/stores/sectionStore"
 import { db } from "@/shared/db/database"
+import { useSyncStore } from "@/shared/stores/syncStore"
 
 interface StudentsState {
   students: Student[]
@@ -35,14 +36,17 @@ export const useStudentsStore = create<StudentsState>((set, get) => ({
     const id = `${Date.now()}`
     await db.students.add({ ...data, id })
     await get().loadStudents()
+    useSyncStore.getState().markDirty()
   },
   updateStudent: async (id, data) => {
     await db.students.update(id, data)
     await get().loadStudents()
+    useSyncStore.getState().markDirty()
   },
   deleteStudent: async (id) => {
     await db.students.delete(id)
     await get().loadStudents()
+    useSyncStore.getState().markDirty()
   },
   getStudents: () => {
     const sectionId = useSectionStore.getState().activeSectionId

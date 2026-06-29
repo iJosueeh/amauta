@@ -3,6 +3,7 @@ import type { AttendanceStatus, StudentAttendance } from "@/features/attendance/
 import { attendanceBySection } from "@/features/attendance/seeds"
 import { useSectionStore } from "@/shared/stores/sectionStore"
 import { db } from "@/shared/db/database"
+import { useSyncStore } from "@/shared/stores/syncStore"
 
 interface AttendanceState {
   search: string
@@ -46,6 +47,7 @@ export const useAttendanceStore = create<AttendanceState>((set, get) => ({
         status,
       })
     }
+    useSyncStore.getState().markDirty()
   },
   loadAttendance: async () => {
     const sectionId = useSectionStore.getState().activeSectionId

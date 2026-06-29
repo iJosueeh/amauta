@@ -2,6 +2,7 @@ import { create } from "zustand"
 import type { Incident, IncidentsFilters } from "@/features/incidents/types"
 import { useSectionStore } from "@/shared/stores/sectionStore"
 import { db } from "@/shared/db/database"
+import { useSyncStore } from "@/shared/stores/syncStore"
 
 interface IncidentsState {
   incidents: Incident[]
@@ -34,14 +35,17 @@ export const useIncidentsStore = create<IncidentsState>((set, get) => ({
     const id = `${Date.now()}`
     await db.incidents.add({ ...data, id, sectionId })
     await get().loadIncidents()
+    useSyncStore.getState().markDirty()
   },
   updateIncident: async (id, data) => {
     await db.incidents.update(id, data)
     await get().loadIncidents()
+    useSyncStore.getState().markDirty()
   },
   deleteIncident: async (id) => {
     await db.incidents.delete(id)
     await get().loadIncidents()
+    useSyncStore.getState().markDirty()
   },
   getIncidents: () => {
     const { incidents, filters } = get()
