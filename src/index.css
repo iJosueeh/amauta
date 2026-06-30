@@ -160,6 +160,20 @@ input::-webkit-textfield-decoration-button {
     outline-offset: 2px;
 }
 
+/* High contrast mode */
+html.high-contrast {
+    --foreground: oklch(0.05 0 0);
+    --card-foreground: oklch(0.05 0 0);
+    --popover-foreground: oklch(0.05 0 0);
+    --muted-foreground: oklch(0.15 0 0);
+    --border: oklch(0.55 0 0);
+    --input: oklch(0.55 0 0);
+}
+
+html.high-contrast *:focus-visible {
+    outline-width: 3px;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .animate-blob-bounce,
     .animate-blob-bounce-delayed,

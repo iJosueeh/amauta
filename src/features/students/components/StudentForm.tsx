@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { Loader2 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -7,12 +8,16 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { useToast } from "@/shared/stores/toastStore"
+import { db } from "@/shared/db/database"
+import { buildSectionLabel } from "@/shared/lib/sections"
 import type { Student, PerformanceLevel } from "@/features/students/types"
 
 interface StudentFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSave: (data: Omit<Student, "id">) => void
+  onSave: (data: Omit<Student, "id" | "initials">) => void
   onDelete?: (id: string) => void
   initial?: Student | null
 }
@@ -24,10 +29,26 @@ const performances: { value: PerformanceLevel; label: string }[] = [
 ]
 
 export function StudentForm({ open, onOpenChange, onSave, onDelete, initial }: StudentFormProps) {
+  const show = useToast((s) => s.show)
   const [name, setName] = useState("")
   const [section, setSection] = useState("")
   const [average, setAverage] = useState("")
   const [performance, setPerformance] = useState<PerformanceLevel>("regular")
+  const [saving, setSaving] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [sectionOptions, setSectionOptions] = useState<{ label: string; value: string }[]>([])
+
+  useEffect(() => {
+    if (!open) return
+    db.sections.toArray().then((rows) => {
+      setSectionOptions(
+        rows.map((s) => {
+          const label = buildSectionLabel(s.name, s.level)
+          return { label, value: label }
+        })
+      )
+    })
+  }, [open])
 
   useEffect(() => {
     if (open) {
@@ -45,23 +66,32 @@ export function StudentForm({ open, onOpenChange, onSave, onDelete, initial }: S
     }
   }, [open, initial])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim() || !section.trim()) return
-    onSave({
-      name,
-      section,
-      average: Number(average) || 0,
-      performance,
-    })
-    onOpenChange(false)
+    setSaving(true)
+    try {
+      onSave({
+        name,
+        section,
+        average: Number(average) || 0,
+        performance,
+      })
+      show(initial ? "Estudiante actualizado" : "Estudiante creado", "success")
+    } finally {
+      setSaving(false)
+      onOpenChange(false)
+    }
   }
 
   const handleDelete = () => {
     if (!initial) return
-    if (confirm(`¿Eliminar a ${initial.name}?`)) {
-      onDelete!(initial.id)
-      onOpenChange(false)
-    }
+    setDeleteConfirmOpen(true)
+  }
+
+  const confirmDelete = () => {
+    if (!initial) return
+    onDelete!(initial.id)
+    onOpenChange(false)
   }
 
   return (
@@ -77,7 +107,16 @@ export function StudentForm({ open, onOpenChange, onSave, onDelete, initial }: S
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-foreground">Sección</label>
-            <Input value={section} onChange={(e) => setSection(e.target.value)} placeholder="ej: 4to B - Secundaria" />
+            <select
+              value={section}
+              onChange={(e) => setSection(e.target.value)}
+              className="w-full cursor-pointer rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+            >
+              <option value="">Seleccionar sección...</option>
+              {sectionOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
@@ -107,13 +146,26 @@ export function StudentForm({ open, onOpenChange, onSave, onDelete, initial }: S
             )}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={!name.trim() || !section.trim()}>
-              {initial ? "Guardar" : "Crear"}
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={!name.trim() || !section.trim() || saving}>
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                initial ? "Guardar" : "Crear"
+              )}
             </Button>
           </div>
         </div>
       </DialogContent>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Eliminar estudiante"
+        description={`¿Estás seguro de eliminar a ${initial?.name}? Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar"
+        onConfirm={confirmDelete}
+      />
     </Dialog>
   )
 }

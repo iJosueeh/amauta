@@ -13,7 +13,7 @@ interface StudentsState {
   setSearch: (search: string) => void
   setPerformanceFilter: (performance: PerformanceLevel | null) => void
   clearFilters: () => void
-  addStudent: (data: Omit<Student, "id">) => Promise<void>
+  addStudent: (data: Omit<Student, "id" | "initials">) => Promise<void>
   updateStudent: (id: string, data: Partial<Student>) => Promise<void>
   deleteStudent: (id: string) => Promise<void>
   getStudents: () => Student[]
@@ -34,24 +34,26 @@ export const useStudentsStore = create<StudentsState>((set, get) => ({
   clearFilters: () => set({ filters: { performance: null } }),
   addStudent: async (data) => {
     const id = `${Date.now()}`
-    await db.students.add({ ...data, id })
+    // Auto-generate initials from name
+    const initials = data.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+    await db.students.add({ ...data, id, initials } as Student)
     await get().loadStudents()
-    useSyncStore.getState().markDirty()
+    useSyncStore.getState().markDirty("students", id, "create", { ...data, id, initials })
   },
   updateStudent: async (id, data) => {
     await db.students.update(id, data)
     await get().loadStudents()
-    useSyncStore.getState().markDirty()
+    useSyncStore.getState().markDirty("students", id, "update", data)
   },
   deleteStudent: async (id) => {
     await db.students.delete(id)
     await get().loadStudents()
-    useSyncStore.getState().markDirty()
+    useSyncStore.getState().markDirty("students", id, "delete")
   },
   getStudents: () => {
     const sectionId = useSectionStore.getState().activeSectionId
     const section = useSectionStore.getState().sections.find((s) => s.id === sectionId)
-    const sectionLabel = section ? `${section.name} - ${section.level === "secundaria" ? "Secundaria" : "Primaria"}` : ""
+    const sectionLabel = section?.fullName ?? ""
     const { students, search, filters } = get()
     const { performance } = filters
     return students.filter((s) => {

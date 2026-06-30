@@ -10,7 +10,7 @@ export function IncidentsPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const { loadIncidents, addIncident } = useIncidentsStore()
   const activeSectionId = useSectionStore((s) => s.activeSectionId)
-  const sectionName = useSectionStore((s) => s.getActiveSection().name)
+  const sectionName = useSectionStore((s) => s.getActiveSection().fullName)
 
   useEffect(() => { loadIncidents() }, [activeSectionId, loadIncidents])
 

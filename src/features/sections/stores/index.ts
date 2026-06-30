@@ -2,6 +2,7 @@ import { create } from "zustand"
 import type { Section } from "@/features/sections/types"
 import { db } from "@/shared/db/database"
 import { useSyncStore } from "@/shared/stores/syncStore"
+import { buildSectionLabel } from "@/shared/lib/sections"
 
 interface SectionsState {
   sections: Section[]
@@ -25,7 +26,7 @@ export const useSectionsStore = create<SectionsState>((set, get) => ({
     // : ponytail — compute metrics from Dexie at load time
     const enriched = await Promise.all(
       records.map(async (s) => {
-        const sectionLabel = `${s.name} - ${s.level === "secundaria" ? "Secundaria" : "Primaria"}`
+        const sectionLabel = buildSectionLabel(s.name, s.level)
         const [students, gradesRows, incidents] = await Promise.all([
           db.students.where("section").equals(sectionLabel).toArray(),
           db.grades.filter((g) => g.sectionId === s.id).toArray(),
@@ -51,17 +52,17 @@ export const useSectionsStore = create<SectionsState>((set, get) => ({
     const id = data.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
     await db.sections.add({ ...data, id, incidentsCount: 0 })
     await get().loadSections()
-    useSyncStore.getState().markDirty()
+    useSyncStore.getState().markDirty("sections", id, "create", { ...data, id })
   },
   updateSection: async (id, data) => {
     await db.sections.update(id, data)
     await get().loadSections()
-    useSyncStore.getState().markDirty()
+    useSyncStore.getState().markDirty("sections", id, "update", data)
   },
   deleteSection: async (id) => {
     await db.sections.delete(id)
     await get().loadSections()
-    useSyncStore.getState().markDirty()
+    useSyncStore.getState().markDirty("sections", id, "delete")
   },
   getSections: () => {
     const { sections, search } = get()

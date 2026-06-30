@@ -1,9 +1,9 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { UserCheck, Star, AlertTriangle } from "lucide-react"
-import { attendanceBySection } from "@/features/attendance/seeds"
-import { gradesBySection } from "@/features/grades/seeds"
-import { incidentsBySection } from "@/features/incidents/seeds"
 import { useSectionStore } from "@/shared/stores/sectionStore"
+import { useAttendanceStore } from "@/features/attendance/stores"
+import { useGradesStore } from "@/features/grades/stores"
+import { useIncidentsStore } from "@/features/incidents/stores"
 
 type Tab = "attendance" | "grades" | "incidents"
 
@@ -15,11 +15,28 @@ const tabs = [
 
 function AttendanceTab() {
   const sectionId = useSectionStore((s) => s.activeSectionId)
-  const data = attendanceBySection[sectionId] ?? attendanceBySection["4to-b-secundaria"]
-  const students = data.students
-  const present = students.filter((s: { status: string }) => s.status === "present").length
-  const late = students.filter((s: { status: string }) => s.status === "late").length
-  const absent = students.filter((s: { status: string }) => s.status === "absent").length
+  const loadStudents = useAttendanceStore((s) => s.loadStudents)
+  const loadAttendance = useAttendanceStore((s) => s.loadAttendance)
+  const students = useAttendanceStore((s) => s.getStudents())
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    if (!sectionId) return
+    setLoaded(false)
+    Promise.all([loadStudents(), loadAttendance()]).then(() => setLoaded(true))
+  }, [sectionId, loadStudents, loadAttendance])
+
+  if (!loaded) {
+    return (
+      <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+        Cargando datos de asistencia...
+      </div>
+    )
+  }
+
+  const present = students.filter((s) => s.status === "present").length
+  const late = students.filter((s) => s.status === "late").length
+  const absent = students.filter((s) => s.status === "absent").length
   const total = students.length
 
   return (
@@ -40,7 +57,7 @@ function AttendanceTab() {
       </div>
 
       <div className="space-y-2">
-        {students.map((s: { id: string; name: string; status: string }) => (
+        {students.map((s) => (
           <div
             key={s.id}
             className="flex items-center justify-between rounded-lg border border-border p-3"
@@ -70,8 +87,27 @@ function AttendanceTab() {
 
 function GradesTab() {
   const sectionId = useSectionStore((s) => s.activeSectionId)
-  const data = gradesBySection[sectionId] ?? gradesBySection["4to-b-secundaria"]
-  const students = data.students
+  const loadGrades = useGradesStore((s) => s.loadGrades)
+  const getStudentsFromRoster = useGradesStore((s) => s.getStudentsFromRoster)
+  const [students, setStudents] = useState<Array<{ id: string; name: string; grades: { ev1: number | null; ev2: number | null; ev3: number | null; exam: number | null } }>>([])
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    if (!sectionId) return
+    setLoaded(false)
+    loadGrades().then(() => getStudentsFromRoster()).then((data) => {
+      setStudents(data)
+      setLoaded(true)
+    })
+  }, [sectionId, loadGrades, getStudentsFromRoster])
+
+  if (!loaded) {
+    return (
+      <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+        Cargando notas...
+      </div>
+    )
+  }
 
   const calcAverage = (g: { ev1: number | null; ev2: number | null; ev3: number | null; exam: number | null }) => {
     const vals = [g.ev1, g.ev2, g.ev3, g.exam].filter((v): v is number => v !== null)
@@ -87,7 +123,7 @@ function GradesTab() {
         <div className="text-center">Ev2</div>
         <div className="text-center">Prom.</div>
       </div>
-      {students.map((s: { id: string; name: string; grades: { ev1: number | null; ev2: number | null; ev3: number | null; exam: number | null } }) => {
+      {students.map((s) => {
         const avg = calcAverage(s.grades)
         return (
           <div
@@ -123,10 +159,27 @@ function GradesTab() {
 
 function IncidentsTab() {
   const sectionId = useSectionStore((s) => s.activeSectionId)
-  const data = incidentsBySection[sectionId] ?? incidentsBySection["4to-b-secundaria"]
-  const positive = data.incidents.filter((i) => i.category === "positive").length
-  const negative = data.incidents.filter((i) => i.category === "negative").length
-  const observation = data.incidents.filter((i) => i.category === "observation").length
+  const loadIncidents = useIncidentsStore((s) => s.loadIncidents)
+  const incidents = useIncidentsStore((s) => s.getIncidents())
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    if (!sectionId) return
+    setLoaded(false)
+    loadIncidents().then(() => setLoaded(true))
+  }, [sectionId, loadIncidents])
+
+  if (!loaded) {
+    return (
+      <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+        Cargando incidentes...
+      </div>
+    )
+  }
+
+  const positive = incidents.filter((i) => i.category === "positive").length
+  const negative = incidents.filter((i) => i.category === "negative").length
+  const observation = incidents.filter((i) => i.category === "observation").length
 
   return (
     <div className="space-y-4">
@@ -146,7 +199,7 @@ function IncidentsTab() {
       </div>
 
       <div className="space-y-2">
-        {data.incidents.map((inc) => (
+        {incidents.map((inc) => (
           <div
             key={inc.id}
             className="rounded-lg border border-border p-3"

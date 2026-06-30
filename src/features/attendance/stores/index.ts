@@ -1,6 +1,5 @@
 import { create } from "zustand"
 import type { AttendanceStatus, StudentAttendance } from "@/features/attendance/types"
-import { attendanceBySection } from "@/features/attendance/seeds"
 import { useSectionStore } from "@/shared/stores/sectionStore"
 import { db } from "@/shared/db/database"
 import { useSyncStore } from "@/shared/stores/syncStore"
@@ -49,7 +48,7 @@ export const useAttendanceStore = create<AttendanceState>((set, get) => ({
         status,
       })
     }
-    useSyncStore.getState().markDirty()
+    useSyncStore.getState().markDirty("attendance", `${sectionId}-${selectedDate}`, "update", { statuses })
   },
   loadAttendance: async () => {
     const sectionId = useSectionStore.getState().activeSectionId
@@ -64,9 +63,9 @@ export const useAttendanceStore = create<AttendanceState>((set, get) => ({
     set({ statuses })
   },
   loadStudents: async () => {
-    const sectionId = useSectionStore.getState().activeSectionId
-    const section = attendanceBySection[sectionId]?.section ?? ""
-    const roster = await db.students.where("section").equals(section).toArray()
+    const section = useSectionStore.getState().getActiveSection()
+    const sectionLabel = section?.fullName ?? ""
+    const roster = await db.students.where("section").equals(sectionLabel).toArray()
     const { statuses } = get()
     const mapped: StudentAttendance[] = roster.map((s) => ({
       id: s.id,
@@ -82,11 +81,11 @@ export const useAttendanceStore = create<AttendanceState>((set, get) => ({
     return students.map((s) => ({ ...s, status: statuses[s.id] ?? s.status }))
   },
   getSection: () => {
-    const sectionId = useSectionStore.getState().activeSectionId
-    return attendanceBySection[sectionId]?.section ?? "—"
+    const section = useSectionStore.getState().getActiveSection()
+    return section?.fullName ?? "—"
   },
   getSubject: () => {
-    const sectionId = useSectionStore.getState().activeSectionId
-    return attendanceBySection[sectionId]?.subject ?? "—"
+    const section = useSectionStore.getState().getActiveSection()
+    return section?.subject ?? "—"
   },
 }))

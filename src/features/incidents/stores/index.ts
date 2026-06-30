@@ -35,17 +35,17 @@ export const useIncidentsStore = create<IncidentsState>((set, get) => ({
     const id = `${Date.now()}`
     await db.incidents.add({ ...data, id, sectionId })
     await get().loadIncidents()
-    useSyncStore.getState().markDirty()
+    useSyncStore.getState().markDirty("incidents", id, "create", { ...data, id, sectionId })
   },
   updateIncident: async (id, data) => {
     await db.incidents.update(id, data)
     await get().loadIncidents()
-    useSyncStore.getState().markDirty()
+    useSyncStore.getState().markDirty("incidents", id, "update", data)
   },
   deleteIncident: async (id) => {
     await db.incidents.delete(id)
     await get().loadIncidents()
-    useSyncStore.getState().markDirty()
+    useSyncStore.getState().markDirty("incidents", id, "delete")
   },
   getIncidents: () => {
     const { incidents, filters } = get()

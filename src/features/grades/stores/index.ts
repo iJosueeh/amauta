@@ -1,6 +1,5 @@
 import { create } from "zustand"
 import type { Period, Student } from "@/features/grades/types"
-import { gradesBySection } from "@/features/grades/seeds"
 import { useSectionStore } from "@/shared/stores/sectionStore"
 import { db } from "@/shared/db/database"
 import { useSyncStore } from "@/shared/stores/syncStore"
@@ -40,14 +39,14 @@ export const useGradesStore = create<GradesState>((set, get) => ({
     const period = get().selectedPeriod
     await db.grades.put({ id: `${sectionId}-${period}-${studentId}`, sectionId, period, studentId, grades })
     set((s) => ({ gradesMap: { ...s.gradesMap, [studentId]: grades } }))
-    useSyncStore.getState().markDirty()
+    useSyncStore.getState().markDirty("grades", `${sectionId}-${period}-${studentId}`, "update", { grades })
   },
   getStudentsFromRoster: async () => {
-    const sectionId = useSectionStore.getState().activeSectionId
-    const section = gradesBySection[sectionId]?.section ?? ""
+    const section = useSectionStore.getState().getActiveSection()
+    const sectionLabel = section?.fullName ?? ""
     await get().loadGrades()
     const { gradesMap } = get()
-    const roster = await db.students.where("section").equals(section).toArray()
+    const roster = await db.students.where("section").equals(sectionLabel).toArray()
     return roster.map((s) => ({
       id: s.id,
       name: s.name,
@@ -56,11 +55,11 @@ export const useGradesStore = create<GradesState>((set, get) => ({
     }))
   },
   getSubject: () => {
-    const sectionId = useSectionStore.getState().activeSectionId
-    return gradesBySection[sectionId]?.subject ?? "—"
+    const section = useSectionStore.getState().getActiveSection()
+    return section?.subject ?? "—"
   },
   getSection: () => {
-    const sectionId = useSectionStore.getState().activeSectionId
-    return gradesBySection[sectionId]?.section ?? "—"
+    const section = useSectionStore.getState().getActiveSection()
+    return section?.fullName ?? "—"
   },
 }))

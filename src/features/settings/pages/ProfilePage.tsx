@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router"
 import {
   ArrowLeft,
@@ -9,34 +9,69 @@ import {
   RefreshCw,
   LogOut,
   Pencil,
-  ChevronRight,
+  Loader2,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useSettingsStore } from "@/features/settings/stores"
 import { useAuthStore } from "@/features/auth/stores/authStore"
+import { useSyncStore } from "@/shared/stores/syncStore"
+import { ProfileEditDialog } from "@/features/settings/components/ProfileEditDialog"
 
 const languages = ["Español (Perú)", "Quechua", "Aymara"]
 
+const appVersion = __APP_VERSION__
+
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
-    <div className="relative inline-block w-12 shrink-0">
-      <input type="checkbox" checked={checked} onChange={onChange} className="peer sr-only" />
-      <div className="h-6 cursor-pointer rounded-full bg-border transition-colors peer-checked:bg-primary" />
-      <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-6" />
-    </div>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={onChange}
+      className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${checked ? "bg-primary" : "bg-border"}`}
+    >
+      <span
+        className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${checked ? "translate-x-6" : "translate-x-0.5"}`}
+      />
+    </button>
   )
 }
 
 export function ProfilePage() {
   const navigate = useNavigate()
   const logout = useAuthStore((s) => s.logout)
-  const { profile, preferences, toggleNotifications, toggleHighContrast, toggleOfflineMode, setLanguage, loadSettings } = useSettingsStore()
+  const { profile, preferences, updateProfile, toggleNotifications, toggleHighContrast, toggleOfflineMode, setLanguage, loadSettings } = useSettingsStore()
+  const { isSyncing, lastSyncedAt, sync, loadLastSyncedAt } = useSyncStore()
+  const [editOpen, setEditOpen] = useState(false)
 
-  useEffect(() => { loadSettings() }, [loadSettings])
+  useEffect(() => { loadSettings(); loadLastSyncedAt() }, [loadSettings, loadLastSyncedAt])
+
+  // Apply high contrast class to <html> when preference is true
+  useEffect(() => {
+    const root = document.documentElement
+    if (preferences.highContrast) {
+      root.classList.add("high-contrast")
+    } else {
+      root.classList.remove("high-contrast")
+    }
+  }, [preferences.highContrast])
 
   const handleLogout = () => {
     logout()
     navigate("/login")
+  }
+
+  const handleSync = async () => {
+    await sync()
+  }
+
+  const formatLastSync = () => {
+    if (!lastSyncedAt) return "Nunca"
+    const d = new Date(lastSyncedAt)
+    const now = new Date()
+    const isToday = d.toDateString() === now.toDateString()
+    const time = d.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })
+    return isToday ? `Hoy, ${time}` : d.toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" }) + ", " + time
   }
 
   return (
@@ -77,7 +112,10 @@ export function ProfilePage() {
             </div>
           </div>
         </div>
-        <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-muted/30 px-6 py-3 text-sm font-medium text-primary transition-colors hover:bg-muted md:w-auto">
+        <button
+          onClick={() => setEditOpen(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-muted/30 px-6 py-3 text-sm font-medium text-primary transition-colors hover:bg-muted md:w-auto"
+        >
           <Pencil className="h-4 w-4" />
           Editar Perfil
         </button>
@@ -141,7 +179,7 @@ export function ProfilePage() {
           <h4 className="text-xs font-semibold uppercase tracking-wider text-primary">Sistema y Datos</h4>
         </div>
         <div className="divide-y divide-border">
-          <div className="flex items-start justify-between p-4">
+          <label className="flex cursor-pointer items-start justify-between p-4 transition-colors hover:bg-muted/30">
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary/10 text-secondary">
                 <WifiOff className="h-5 w-5" />
@@ -160,19 +198,30 @@ export function ProfilePage() {
               </div>
             </div>
             <Toggle checked={preferences.offlineMode} onChange={toggleOfflineMode} />
-          </div>
+          </label>
 
-          <button className="group flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-muted/30">
+          <button
+            onClick={handleSync}
+            disabled={isSyncing}
+            className="group flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-muted/30 disabled:opacity-60"
+          >
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                <RefreshCw className="h-5 w-5" />
+                {isSyncing ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-5 w-5" />
+                )}
               </div>
               <div>
-                <span className="block text-sm font-medium text-foreground">Sincronizar ahora</span>
-                <span className="mt-0.5 block text-xs text-muted-foreground">Ultima sincronizacion: Hoy, 08:30 AM</span>
+                <span className="block text-sm font-medium text-foreground">
+                  {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
+                </span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  Ultima sincronizacion: {formatLastSync()}
+                </span>
               </div>
             </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-primary" />
           </button>
         </div>
       </section>
@@ -187,11 +236,18 @@ export function ProfilePage() {
           Cerrar Sesion
         </button>
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          Amauta App v2.4.1 (Build 8492)
+          Amauta App {appVersion}
           <br />
           Ministerio de Educacion del Peru
         </p>
       </div>
+
+      <ProfileEditDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        initial={profile}
+        onSave={updateProfile}
+      />
     </main>
   )
 }

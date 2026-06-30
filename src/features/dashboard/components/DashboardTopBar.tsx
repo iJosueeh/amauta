@@ -7,21 +7,12 @@ import { useSyncStore } from "@/shared/stores/syncStore"
 
 export function DashboardTopBar() {
   const location = useLocation()
-  const { hasPendingChanges, isSyncing, isOnline, lastSyncedAt, sync, setOnline } = useSyncStore()
+  const { hasPendingChanges, isSyncing, isOnline, lastSyncedAt, pendingCount, sync, loadPendingCount, loadLastSyncedAt } = useSyncStore()
 
-  useEffect(() => {
-    const handleOnline = () => setOnline(true)
-    const handleOffline = () => setOnline(false)
-    window.addEventListener("online", handleOnline)
-    window.addEventListener("offline", handleOffline)
-    return () => {
-      window.removeEventListener("online", handleOnline)
-      window.removeEventListener("offline", handleOffline)
-    }
-  }, [setOnline])
+  useEffect(() => { loadPendingCount(); loadLastSyncedAt() }, [loadPendingCount, loadLastSyncedAt])
 
   const dotColor = !isOnline ? "bg-red-500" : hasPendingChanges ? "bg-amber-500" : "bg-green-500"
-  const label = !isOnline ? "Sin conexión" : hasPendingChanges ? "Cambios pendientes" : "Sincronizado"
+  const label = !isOnline ? "Sin conexion" : hasPendingChanges ? `${pendingCount} pendiente${pendingCount !== 1 ? "s" : ""}` : "Sincronizado"
   const Icon = !isOnline ? WifiOff : RefreshCw
 
   return (
@@ -59,7 +50,7 @@ export function DashboardTopBar() {
         disabled={isSyncing || !isOnline}
         className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-all hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
         aria-label={label}
-        title={lastSyncedAt ? `Última sync: ${new Date(lastSyncedAt).toLocaleTimeString()}` : ""}
+        title={lastSyncedAt ? `Ultima sync: ${new Date(lastSyncedAt).toLocaleTimeString()}` : ""}
       >
         <span className={`h-2 w-2 rounded-full ${dotColor} ${isSyncing ? "animate-ping" : ""}`} />
         <Icon className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin" : ""}`} />

@@ -12,7 +12,7 @@ export function StudentsGrid() {
 
   const students = getStudents()
 
-  const handleSave = async (data: Omit<Student, "id">) => {
+  const handleSave = async (data: Omit<Student, "id" | "initials">) => {
     if (editing) {
       await updateStudent(editing.id, data)
     } else {

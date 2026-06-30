@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { Loader2 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -7,6 +8,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useToast } from "@/shared/stores/toastStore"
 import type { Section } from "@/features/sections/types"
 
 interface SectionFormProps {
@@ -17,12 +19,14 @@ interface SectionFormProps {
 }
 
 export function SectionForm({ open, onOpenChange, onSave, initial }: SectionFormProps) {
+  const show = useToast((s) => s.show)
   const [name, setName] = useState("")
   const [level, setLevel] = useState<"primaria" | "secundaria">("secundaria")
   const [subject, setSubject] = useState("")
   const [studentCount, setStudentCount] = useState("")
   const [average, setAverage] = useState("")
   const [attendanceRate, setAttendanceRate] = useState("")
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -44,17 +48,23 @@ export function SectionForm({ open, onOpenChange, onSave, initial }: SectionForm
     }
   }, [open, initial])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim() || !subject.trim() || !studentCount) return
-    onSave({
-      name,
-      level,
-      subject,
-      studentCount: Number(studentCount),
-      average: Number(average) || 0,
-      attendanceRate: Number(attendanceRate) || 0,
-    })
-    onOpenChange(false)
+    setSaving(true)
+    try {
+      onSave({
+        name,
+        level,
+        subject,
+        studentCount: Number(studentCount),
+        average: Number(average) || 0,
+        attendanceRate: Number(attendanceRate) || 0,
+      })
+      show(initial ? "Sección actualizada" : "Sección creada", "success")
+    } finally {
+      setSaving(false)
+      onOpenChange(false)
+    }
   }
 
   return (
@@ -105,9 +115,13 @@ export function SectionForm({ open, onOpenChange, onSave, initial }: SectionForm
           </div>
         </div>
         <div className="flex justify-end gap-2 border-t border-border/30 px-4 py-3">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={!name.trim() || !subject.trim()}>
-            {initial ? "Guardar" : "Crear"}
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={!name.trim() || !subject.trim() || saving}>
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              initial ? "Guardar" : "Crear"
+            )}
           </Button>
         </div>
       </DialogContent>

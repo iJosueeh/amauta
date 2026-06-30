@@ -11,4 +11,5 @@ export interface SettingsPreferences {
   language: string
   offlineMode: boolean
   activeSectionId: string
+  lastSyncedAt: string | null
 }

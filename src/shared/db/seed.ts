@@ -10,6 +10,10 @@ export async function seedDatabase() {
   const count = await db.sections.count()
   if (count > 0) return
 
+  await runSeed()
+}
+
+async function runSeed() {
   await db.sections.bulkAdd(sectionsData)
 
   // Seed canonical student roster (single source of truth)
@@ -54,5 +58,14 @@ export async function seedDatabase() {
   }
 
   await db.profile.add({ id: "current", name: "María Elena Rojas", email: "maria.rojas@minedu.gob.pe", tags: ["Secundaria", "Matemáticas"] })
-  await db.preferences.add({ id: "current", notifications: true, highContrast: false, language: "Español (Perú)", offlineMode: false, activeSectionId: "4to-b-secundaria" })
+  await db.preferences.add({ id: "current", notifications: true, highContrast: false, language: "Español (Perú)", offlineMode: false, activeSectionId: "4to-b-secundaria", lastSyncedAt: null })
+}
+
+// Reset database: clear all tables and re-seed with sample data
+export async function resetDatabase() {
+  // Clear all tables
+  for (const table of db.tables) {
+    await table.clear()
+  }
+  await runSeed()
 }

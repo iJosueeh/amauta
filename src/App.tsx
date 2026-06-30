@@ -3,6 +3,7 @@ import { RouterProvider } from "react-router"
 import { router } from "@/app/routes/router"
 import { seedDatabase } from "@/shared/db/seed"
 import { useAuthStore } from "@/features/auth/stores/authStore"
+import { useSectionStore } from "@/shared/stores/sectionStore"
 import { ToastContainer } from "@/shared/components/Toast"
 
 function SplashScreen({ error, onRetry }: { error?: string; onRetry?: () => void }) {
@@ -48,6 +49,7 @@ export default function App() {
     setError("")
     try {
       await seedDatabase()
+      await useSectionStore.getState().loadSections()
       await restore()
       setStatus("ready")
     } catch (e: any) {

@@ -1,12 +1,13 @@
 import { useParams, useNavigate } from "react-router"
 import { ArrowLeft, Users, BookOpen, TrendingUp, AlertTriangle } from "lucide-react"
-import { getSectionById } from "@/features/sections/seeds"
+import { useSectionStore } from "@/shared/stores/sectionStore"
 import { SectionDetailTabs } from "@/features/sections/components/SectionDetailTabs"
 
 export function SectionDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const section = getSectionById(id ?? "")
+  const sections = useSectionStore((s) => s.sections)
+  const section = sections.find((s) => s.id === id)
 
   if (!section) {
     return (
@@ -42,7 +43,7 @@ export function SectionDetailPage() {
             </span>
           </div>
           <h2 className="text-3xl font-bold tracking-tight text-foreground">
-            {section.name} - Secundaria
+            {section.fullName}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {section.subject}

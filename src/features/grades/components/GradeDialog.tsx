@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Loader2 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -8,6 +8,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { useToast } from "@/shared/stores/toastStore"
 import { GradeInput, calculateAverage, getAverageColor } from "./GradeInput"
 import type { Student } from "@/features/grades/types"
 
@@ -26,9 +27,11 @@ interface GradeDialogProps {
 }
 
 export function GradeDialog({ student, open, onOpenChange, onGradesChange }: GradeDialogProps) {
+  const show = useToast((s) => s.show)
   const [localGrades, setLocalGrades] = useState<Student["grades"]>(
     student?.grades ?? { ev1: null, ev2: null, ev3: null, exam: null }
   )
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (open && student) {
@@ -53,12 +56,17 @@ export function GradeDialog({ student, open, onOpenChange, onGradesChange }: Gra
     []
   )
 
-  const handleSave = useCallback(() => {
-    if (student) {
+  const handleSave = useCallback(async () => {
+    if (!student) return
+    setSaving(true)
+    try {
       onGradesChange(student.id, localGrades)
+      show("Calificación actualizada", "success", 2000)
+    } finally {
+      setSaving(false)
+      onOpenChange(false)
     }
-    onOpenChange(false)
-  }, [student, localGrades, onGradesChange, onOpenChange])
+  }, [student, localGrades, onGradesChange, onOpenChange, show])
 
   if (!student) return null
 
@@ -105,9 +113,15 @@ export function GradeDialog({ student, open, onOpenChange, onGradesChange }: Gra
               {avg !== null ? avg.toFixed(1) : "--"}
             </span>
           </div>
-          <Button size="sm" className="gap-1.5" onClick={handleSave}>
-            Guardar
-            <ArrowRight className="h-3.5 w-3.5" />
+          <Button size="sm" className="gap-1.5" onClick={handleSave} disabled={saving}>
+            {saving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <>
+                Guardar
+                <ArrowRight className="h-3.5 w-3.5" />
+              </>
+            )}
           </Button>
         </div>
       </DialogContent>

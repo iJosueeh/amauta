@@ -22,11 +22,11 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   loadKpis: async () => {
     const sectionId = useSectionStore.getState().activeSectionId
     const section = useSectionStore.getState().sections.find((s) => s.id === sectionId)
-    const sectionName = section?.name ?? ""
+    const sectionName = section?.fullName ?? ""
     const today = new Date().toISOString().slice(0, 10)
 
     const [students, attendance, grades, incidents] = await Promise.all([
-      db.students.filter((s) => s.section.includes(sectionName.split(" - ")[0])).toArray(),
+      db.students.filter((s) => s.section === sectionName).toArray(),
       db.attendance.filter((a) => a.sectionId === sectionId && a.date === today).toArray(),
       db.grades.filter((g) => g.sectionId === sectionId).toArray(),
       db.incidents.filter((i) => i.sectionId === sectionId).toArray(),

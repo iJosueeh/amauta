@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { Loader2 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -14,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useToast } from "@/shared/stores/toastStore"
 import type { Incident, IncidentCategory } from "@/features/incidents/types"
 import type { Student as RosterStudent } from "@/features/students/types"
 import { db } from "@/shared/db/database"
@@ -33,11 +35,13 @@ const categories: { value: IncidentCategory; label: string }[] = [
 ]
 
 export function IncidentForm({ open, onOpenChange, onSave, initial, sectionName }: IncidentFormProps) {
-  const [selectedStudentId, setSelectedStudentId] = useState<string | null>("")
+  const show = useToast((s) => s.show)
+  const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(undefined)
   const [students, setStudents] = useState<RosterStudent[]>([])
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [category, setCategory] = useState<IncidentCategory>("observation")
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -55,7 +59,7 @@ export function IncidentForm({ open, onOpenChange, onSave, initial, sectionName 
         setDescription(initial.description)
         setCategory(initial.category)
       } else {
-        setSelectedStudentId("")
+        setSelectedStudentId(undefined)
         setTitle("")
         setDescription("")
         setCategory("observation")
@@ -65,23 +69,29 @@ export function IncidentForm({ open, onOpenChange, onSave, initial, sectionName 
 
   const selectedStudent = students.find((s) => s.id === selectedStudentId)
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selectedStudentId || !title.trim()) return
-    const now = new Date()
-    const date = now.toLocaleDateString("es-PE", { day: "2-digit", month: "long", year: "numeric" })
-    const time = now.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })
-    onSave({
-      studentId: selectedStudentId,
-      studentName: selectedStudent?.name ?? "",
-      studentInitials: selectedStudent?.initials ?? "",
-      section: sectionName,
-      category,
-      title,
-      description,
-      date,
-      time,
-    })
-    onOpenChange(false)
+    setSaving(true)
+    try {
+      const now = new Date()
+      const date = now.toLocaleDateString("es-PE", { day: "2-digit", month: "long", year: "numeric" })
+      const time = now.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })
+      onSave({
+        studentId: selectedStudentId,
+        studentName: selectedStudent?.name ?? "",
+        studentInitials: selectedStudent?.initials ?? "",
+        section: sectionName,
+        category,
+        title,
+        description,
+        date,
+        time,
+      })
+      show(initial ? "Incidente actualizado" : "Incidente registrado", "success")
+    } finally {
+      setSaving(false)
+      onOpenChange(false)
+    }
   }
 
   return (
@@ -93,16 +103,26 @@ export function IncidentForm({ open, onOpenChange, onSave, initial, sectionName 
         <div className="space-y-3 p-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-foreground">Alumno</label>
-            <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar alumno..." />
+            <Select value={selectedStudentId ?? undefined} onValueChange={(v) => setSelectedStudentId(v ?? undefined)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleccionar alumno...">
+                  {(value: string | null) => {
+                    const student = students.find((s) => s.id === value)
+                    if (!student) return "Seleccionar alumno..."
+                    const ini = student.initials || student.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+                    return `${student.name} (${ini})`
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {students.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name} ({s.initials})
-                  </SelectItem>
-                ))}
+                {students.map((s) => {
+                  const ini = s.initials || s.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+                  return (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name} ({ini})
+                    </SelectItem>
+                  )
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -140,9 +160,13 @@ export function IncidentForm({ open, onOpenChange, onSave, initial, sectionName 
           </div>
         </div>
         <div className="flex justify-end gap-2 border-t border-border/30 px-4 py-3">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={!selectedStudentId || !title.trim()}>
-            {initial ? "Guardar" : "Crear"}
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={!selectedStudentId || !title.trim() || saving}>
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              initial ? "Guardar" : "Crear"
+            )}
           </Button>
         </div>
       </DialogContent>

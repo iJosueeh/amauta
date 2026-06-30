@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect } from "react"
-import { Download, Info, ChevronRight } from "lucide-react"
+import { Download, Info, ChevronRight, Save, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useGradesStore } from "@/features/grades/stores"
 import { useSectionStore } from "@/shared/stores/sectionStore"
+import { useToast } from "@/shared/stores/toastStore"
 import { GradeInput, calculateAverage, getAverageColor } from "./GradeInput"
 import { GradeDialog } from "./GradeDialog"
 import type { Student } from "@/features/grades/types"
@@ -18,9 +19,11 @@ export function GradesTable() {
   const { updateGrades, loadGrades, getStudentsFromRoster } = useGradesStore()
   const activeSectionId = useSectionStore((s) => s.activeSectionId)
   const selectedPeriod = useGradesStore((s) => s.selectedPeriod)
+  const show = useToast((s) => s.show)
   const [students, setStudents] = useState<Student[]>([])
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [savingAll, setSavingAll] = useState(false)
 
   useEffect(() => {
     loadGrades()
@@ -52,9 +55,24 @@ export function GradesTable() {
         )
       )
       updateGrades(studentId, grades)
+      show("Calificación actualizada", "success", 2000)
     },
-    [updateGrades]
+    [updateGrades, show]
   )
+
+  const handleSaveAll = useCallback(async () => {
+    setSavingAll(true)
+    try {
+      for (const student of students) {
+        await updateGrades(student.id, student.grades)
+      }
+      show("Todas las calificaciones guardadas", "success")
+    } catch {
+      show("Error al guardar calificaciones", "error")
+    } finally {
+      setSavingAll(false)
+    }
+  }, [students, updateGrades, show])
 
   const openDialog = useCallback((student: Student) => {
     setSelectedStudent(student)
@@ -71,10 +89,26 @@ export function GradesTable() {
         <span className="text-sm font-medium text-muted-foreground">
           {students.length} Alumnos inscritos
         </span>
-        <Button variant="ghost" size="sm" className="gap-1.5 text-primary hover:bg-muted">
-          <Download className="h-4 w-4" />
-          Exportar
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            className="gap-1.5"
+            onClick={handleSaveAll}
+            disabled={savingAll}
+          >
+            {savingAll ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            {savingAll ? "Guardando..." : "Guardar todo"}
+          </Button>
+          <Button variant="ghost" size="sm" className="gap-1.5 text-primary hover:bg-muted">
+            <Download className="h-4 w-4" />
+            Exportar
+          </Button>
+        </div>
       </div>
 
       {/* Mobile: Card list */}

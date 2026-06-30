@@ -1,35 +1,49 @@
 import { create } from "zustand"
 import { db } from "@/shared/db/database"
+import { buildSectionLabel } from "@/shared/lib/sections"
 
 export interface SectionInfo {
   id: string
   name: string
+  fullName: string
   level: "primaria" | "secundaria"
   subject: string
+  studentCount: number
+  average: number
+  attendanceRate: number
+  incidentsCount: number
 }
-
-const sections: SectionInfo[] = [
-  { id: "4to-b-secundaria", name: "4to B - Secundaria", level: "secundaria", subject: "Matemática" },
-  { id: "3to-a-secundaria", name: "3to A - Secundaria", level: "secundaria", subject: "Comunicación" },
-  { id: "5to-b-secundaria", name: "5to B - Secundaria", level: "secundaria", subject: "Ciencias" },
-  { id: "1ro-a-secundaria", name: "1ro A - Secundaria", level: "secundaria", subject: "Historia" },
-  { id: "5to-c-primaria", name: "5to C - Primaria", level: "primaria", subject: "Matemática" },
-  { id: "3ro-a-primaria", name: "3ro A - Primaria", level: "primaria", subject: "Comunicación" },
-]
 
 interface SectionState {
   activeSectionId: string
   sections: SectionInfo[]
+  loaded: boolean
+  loadSections: () => Promise<void>
   setActiveSection: (id: string) => void
   getActiveSection: () => SectionInfo
 }
 
 export const useSectionStore = create<SectionState>((set, get) => ({
   activeSectionId: "4to-b-secundaria",
-  sections,
+  sections: [],
+  loaded: false,
+  loadSections: async () => {
+    const records = await db.sections.toArray()
+    const enriched: SectionInfo[] = records.map((s) => ({
+      id: s.id,
+      name: s.name,
+      fullName: buildSectionLabel(s.name, s.level),
+      level: s.level,
+      subject: s.subject,
+      studentCount: s.studentCount,
+      average: s.average,
+      attendanceRate: s.attendanceRate,
+      incidentsCount: s.incidentsCount,
+    }))
+    set({ sections: enriched, loaded: true })
+  },
   setActiveSection: (id) => {
     set({ activeSectionId: id })
-    // : ponytail — persist section preference
     db.preferences.get("current").then((prefs) => {
       db.preferences.put({ ...prefs!, id: "current", activeSectionId: id })
     })
